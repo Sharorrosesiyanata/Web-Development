@@ -5,13 +5,19 @@ import Link from "next/link";
 import LoadingPage from "../loading";
 import AddBook from "./AddBook";
 
+async function getBooks() {
+  const res = await fetch("http://localhost:3000/api/books");
+  const json = await res.json();
+  return json;
+}
+
 const Books = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
 
   const fetchBooks = async () => {
-    const res = await fetch("/api/books"); //
+    const res = await fetch("/api/books");
     const books = await res.json();
     setBooks(books);
     setLoading(false);
@@ -38,9 +44,8 @@ const Books = () => {
     const res = await fetch(`api/books/${id}`, {
       method: "DELETE",
     });
-
     fetchBooks();
-  };
+  }
 
   return (
     <div>
@@ -70,7 +75,7 @@ const Books = () => {
                 <Link href={book.link} className="btn btn-primary">
                   See in Amazon
                 </Link>
-                <button
+                  <button
                   onClick={() => deleteBook(book.id)}
                   className="btn btn-error"
                 >
@@ -87,3 +92,4 @@ const Books = () => {
 };
 
 export default Books;
+

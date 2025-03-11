@@ -1,12 +1,8 @@
+'use client';
 import Link from "next/link";
 
 async function fetchGitHubUsers() {
-  const res = await fetch("https://api.github.com/search/users?q=Sharor",{
-    next:{
-    revalidate: 10
-    }
-});
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  const res = await fetch("https://api.github.com/search/users?q=Sharor");
   const json = await res.json();
   return json.items;
 }
@@ -14,23 +10,22 @@ async function fetchGitHubUsers() {
 const GitHubUsersPage = async () => {
   const users = await fetchGitHubUsers();
   console.log(users);
+
   return (
     <div>
       <div className="overflow-x-auto">
         <table className="table">
           <thead>
             <tr>
-              <th>Repos</th> <th>Name</th> <th>URL</th> <th></th>
+              <th>Repos</th>
+              <th>Name</th>
+              <th>URL</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
               <tr key={user.id}>
-                <th>
-                  <Link href={`/githubusers/${user.login}`} className="btn btn-link">
-                    Go to Repos
-                  </Link>
-                </th>
                 <td>
                   <div className="flex items-center spacex-3">
                     <div className="avatar">
@@ -49,7 +44,11 @@ const GitHubUsersPage = async () => {
                     View on GitHub
                   </Link>
                 </td>
-                {/* <th> Go to Repos </th> */}
+                <th>
+                  <Link href={`/githubusers/${user.login}`} className="btn btn-link">
+                    Go to Repos
+                  </Link>
+                </th>
               </tr>
             ))}
           </tbody>
@@ -58,4 +57,5 @@ const GitHubUsersPage = async () => {
     </div>
   );
 };
+
 export default GitHubUsersPage;

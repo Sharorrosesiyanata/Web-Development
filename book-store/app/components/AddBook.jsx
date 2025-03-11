@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-const AddBook = ({refreshBooks}) => {
+const AddBook = ({ refreshBooks }) => {
     const [modalOpen, setModalOpen] = useState(false);
     const [newBookTitle, setNewBookTitle] = useState('');
     const [newBookImage, setNewBookImage] = useState('');
@@ -18,39 +18,44 @@ const AddBook = ({refreshBooks}) => {
             body: JSON.stringify({
                 title: newBookTitle,
                 link: "https://www.amazon.com/Beginning-MERN-Stack-MongoDB-Express/dp/B0979MGJ5J",
-                 img: "https://m.media-amazon.com/images/I/41y8qC9RT0S._SX404_BO1,204,203,200_.jpg"
+                img: "https://m.media-amazon.com/images/I/41y8qC9RT0S._SX404_BO1,204,203,200_.jpg"
             })
         })
         if (res.ok) {
             setNewBookTitle('');
             setModalOpen(false);
-            
-        }
-        console.log({ title: newBookTitle, image: newBookImage, link: newBookLink });
-        setNewBookTitle('');
-        setNewBookImage('');
-        setNewBookLink('');
+            refreshBooks();
 
-    }
+        }
+        // console.log({ title: newBookTitle, image: newBookImage, link: newBookLink });
+        // setNewBookTitle('');
+        // setNewBookImage('');
+        // setNewBookLink('');
+
+    };
 
     return (
         <div>
             <button className="btn" onClick={() => setModalOpen(true)}>
-                Add Book
+                Add New Book
             </button>
             <dialog
                 id="my_modal_3"
-                className={`modal ${modalOpen ? "modal-open" : ""}`}>
+                className={`modal ${modalOpen ? "modal-open" : ""}`}
+            >
                 <form
                     method="dialog"
                     className="modal-box"
-                    onSubmit={handleSubmitNewBook}>
+                    onSubmit={handleSubmitNewBook}
+                >
                     <button
                         onClick={() => setModalOpen(false)}
-                        className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"> x
+                        className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                    >
+                        x
                     </button>
-                    <h3 className="font-bold text-lg">Add New Book</h3>
-
+                    <h3 className="font-bold text-lg">Add Book</h3>
+                    {/* book input field */}
                     <input
                         type="text"
                         value={newBookTitle}
@@ -58,7 +63,7 @@ const AddBook = ({refreshBooks}) => {
                         placeholder="Enter New Book Title"
                         className="input input-bordered w-full max-w-xs"
                     />
-
+                    {/* img input field */}
                     <input
                         type="text"
                         value={newBookImage}
@@ -66,7 +71,7 @@ const AddBook = ({refreshBooks}) => {
                         placeholder="Enter Image URL"
                         className="input input-bordered w-full max-w-xs mt-2"
                     />
-
+                    {/* link input field */}
                     <input
                         type="text"
                         value={newBookLink}
@@ -78,7 +83,7 @@ const AddBook = ({refreshBooks}) => {
                     <button
                         type="submit"
                         className='btn btn-primary mt-2'>
-                        Add Book
+                        Add New Book
                     </button>
                 </form>
             </dialog>

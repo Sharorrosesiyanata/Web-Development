@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from '../../../db';
+import { prisma } from "../../../db";
 
+//filtering through books using keywords
 export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get('query');
@@ -11,7 +12,22 @@ export async function GET(req) {
                 contains: query
             }
         }
-    })
+    });
 
     return NextResponse.json(filteredBooks);
-}
+};
+
+//creating a new book
+export async function POST(req) {
+    const { title, link, img } = await req.json();
+    const newBook = {
+        id: books.length + 1,
+        title,
+        link,
+        img
+    };
+    bookes.push(newBook);
+
+    return NextResponse.json("Book added successfully");
+
+};

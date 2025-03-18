@@ -5,7 +5,7 @@ import Link from "next/link";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Quote App",
+  title: "Book Store",
   description: "List of Quotes to leave you feeling encouraged and enlightened",
   keywords: "quotes, encouragement"
 };

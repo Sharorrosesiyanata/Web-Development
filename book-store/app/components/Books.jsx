@@ -6,7 +6,7 @@ import LoadingPage from "../loading";
 import AddBook from "./AddBook";
 
 async function getBooks() {
-  const res = await fetch("http://localhost:3000/api/books");
+  const res = await fetch("http://localhost:5000/books");
   const json = await res.json();
   return json;
 }
@@ -17,7 +17,7 @@ const Books = () => {
   const [query, setQuery] = useState("");
 
   const fetchBooks = async () => {
-    const res = await fetch("/api/books");
+    const res = await fetch("http://localhost:5000/books");
     const books = await res.json();
     setBooks(books);
     setLoading(false);
@@ -34,14 +34,14 @@ const Books = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch(`/api/books/search?query=${query}`);
+    const res = await fetch(`http://localhost:5000/books/search?query=${query}`);
     const books = await res.json();
     setBooks(books);
     setLoading(false);
   };
 
   const deleteBook = async (id) => {
-    const res = await fetch(`api/books/${id}`, {
+    const res = await fetch(`http://localhost:5000/books/${id}`, {
       method: "DELETE",
     });
     fetchBooks();

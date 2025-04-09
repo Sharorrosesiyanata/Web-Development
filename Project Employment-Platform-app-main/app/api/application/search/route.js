@@ -21,11 +21,11 @@ export async function GET(req) {
 export async function POST(req) {
   const { application, name } = await req.json();
   const newApplication = {
-    id: applications.length + 1,
+    id: application.length + 1,
     name,
     application
   };  
-  applications.push(newApplication);
+  application.push(newApplication);
 
   return NextResponse.json("Application added successfully");
 };

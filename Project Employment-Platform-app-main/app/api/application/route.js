@@ -1,22 +1,23 @@
-import { prisma } from "../../db";
-import { NextResponse } from "next/server";
+// app/api/applications/route.js
+import { NextResponse } from 'next/server';
 
-export async function GET(req) {
-  const applications = await prisma.application.findMany();
-  console.log("GET applications called");
+// Mock data for demonstration (replace with your actual data source)
+let applications = [
+  { id: '1', name: 'React Developer', application: 'Applied on 2025-04-01' },
+  { id: '2', name: 'Full Stack Engineer', application: 'Applied on 2025-04-05' },
+];
 
+export async function GET() {
   return NextResponse.json(applications);
 }
 
-export async function POST(req) {
-  const { name, address, occupation, bio } = await req.json();
-
-  const newApplication = await prisma.application.create({
-    data: {
-      name,
-      application, 
-    },
-  });
-
-  return NextResponse.json(newApplication);
+export async function POST(request) {
+  const data = await request.json();
+  const newApplication = {
+    id: Date.now().toString(),
+    ...data
+  };
+  
+  applications.push(newApplication);
+  return NextResponse.json(newApplication, { status: 201 });
 }

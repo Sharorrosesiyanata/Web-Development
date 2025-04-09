@@ -1,29 +1,31 @@
 {
-  "name": "quote-app",
+  "name": "Employment-Platform",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "node prisma/seed.js",
+    "server": "json-server --watch db.json --port 5000"
   },
   "dependencies": {
-    "@prisma/client": "^6.3.0",
+    "@prisma/client": "^6.3.1",
     "autoprefixer": "10.4.15",
-    "mongodb": "^6.12.0",
-    "next": "13.4.19",
-    "postcss": "8.4.28",
-    "prisma": "^6.3.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "tailwindcss": "3.3.3",
+    "daisyui": "^4.12.23",
+    "dotenv": "^16.4.7",
+    "json-server": "^1.0.0-beta.3",
+    "next": "15.1.7",
+    "prisma": "^6.3.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "uuidv4": "^6.2.13"
   },
   "devDependencies": {
-    "@types/node": "22.12.0",
     "@types/react": "19.0.8",
-    "daisyui": "^4.12.23",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
     "typescript": "5.7.3"
   }
 }

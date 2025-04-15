@@ -1,5 +1,4 @@
 import Applications from "./components/Applications";
-import Quotes from "./components/Applications";
 
 const HomePage = () => {
   return (
@@ -10,3 +9,9 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
+
+
+
+// "Courtney Collens",
+// "A personal nurse who is dedicated with expertise in patient-recovery."

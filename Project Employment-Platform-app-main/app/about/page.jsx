@@ -1,9 +1,9 @@
 'use client';
 
 export const metadata = {
-  title: "Quote App",
-  description: "List of Quotes to leave you feeling encouraged and enlightened",
-  keywords: "quotes, encouragement"
+  title: "Employment Platform",
+  description: "A place to tell us of what your profession is",
+  keywords: "applications"
 };
 
 const AboutPage = () => {

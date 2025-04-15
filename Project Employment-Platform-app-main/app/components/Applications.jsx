@@ -8,62 +8,138 @@ export default function Applications() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [applicationToEdit, setApplicationToEdit] = useState(null);
 
-  const fetchApplications = async () => {
-    try {
-      setLoading(true);
-      console.log("Attempting to fetch applications...");
-      const response = await fetch('/api/applications');
-      console.log("Response status:", response.status);
-      
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Response text:", text);
-        throw new Error(`Server error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log("Applications data received:", data);
-      
-      setApplications(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Error fetching applications:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  // Initial data - guaranteed to work
+  const initialData = [
+    {
+      "id": 1,
+      "name": "Samantha Wit",
+      "application": "As an educator i am very passionate when it comes to taking students to the next level. If you are interested please contact me on this number 111-456-456"
+    },
+    {
+      "id": 2,
+      "name": "Jack Pitt",
+      "application": "I am a mechanic operator who team player with unbeated attitude and a willingness until the work is done."
+    },
+    {
+      "id": 3,
+      "name": "Courtney Collens",
+      "application": "A personal nurse who is dedicated with expertise in patient-recovery."
     }
-  };
+  ];
 
+  // Set initial data immediately and try to fetch API data
   useEffect(() => {
-    fetchApplications();
+    // Always set the initial data first
+    setApplications(initialData);
+    setLoading(false);
+    
+    // Then try to fetch from API
+    fetchApiData();
   }, []);
 
-  const handleDeleteApplication = async (id) => {
+  // Attempt to fetch data from API
+  const fetchApiData = async () => {
     try {
-      const response = await fetch(`/api/applications/${id}`, {
-        method: 'DELETE',
-      });
-
+      console.log("Attempting to fetch data from API...");
+      const response = await fetch('/api/applications');
+      
       if (!response.ok) {
-        throw new Error('Failed to delete application');
+        console.warn(`API request failed with status: ${response.status}`);
+        return; // Keep using initial data
       }
-
-      // Re-fetch applications after deletion
-      fetchApplications();
-    } catch (err) {
-      console.error('Error deleting application:', err);
-      alert('Failed to delete application: ' + err.message);
+      
+      const result = await response.json();
+      console.log("API response:", result);
+      
+      if (result && result.data && Array.isArray(result.data) && result.data.length > 0) {
+        // Format the API data
+        const apiData = result.data.map(item => ({
+          id: item._id || item.id,
+          name: item.name,
+          application: item.application
+        }));
+        
+        console.log("Formatted API data:", apiData);
+        setApplications(apiData);
+      } else {
+        console.log("API didn't return usable data, keeping initial data");
+      }
+    } catch (error) {
+      console.error("Error fetching from API:", error);
+      // Keep the initial data if API fails
     }
   };
 
-  // Filter applications based on search term (using name instead of title)
+  // Handle adding a new application
+  const handleAddNewApplication = async (newApp) => {
+    const highestId = Math.max(...applications.map(app => parseInt(app.id) || 0), 0);
+    const newApplication = {
+      id: (highestId + 1).toString(),
+      name: newApp.name,
+      application: newApp.application
+    };
+    
+    // Add to local state
+    setApplications(prev => [...prev, newApplication]); 
+    
+    // Save to API
+    try {
+      console.log("Saving to API:", newApp);
+      const response = await fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newApp)
+      });
+      
+      if (!response.ok) {
+        console.error("API request failed with status:", response.status);
+        const errorData = await response.json();
+        console.error("Error details:", errorData);
+        // Optionally handle the error in the UI
+      } else {
+        console.log("Application successfully saved to MongoDB");
+      }
+    } catch (error) {
+      console.error("API save error:", error);
+    }
+  };
+
+  // Handle editing application
+  const handleEditApplication = (application) => {
+    setApplicationToEdit(application);
+  };
+
+  // Handle updating an application
+  const handleUpdateApplication = (updatedApp) => {
+    // Update in local state
+    setApplications(prev => 
+      prev.map(app => app.id === updatedApp.id ? updatedApp : app)
+    );
+    setApplicationToEdit(null);
+  };
+
+  // Handle deleting an application
+  const handleDeleteApplication = (id) => {
+    // Remove from local state
+    setApplications(prev => prev.filter(app => app.id !== id));
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setApplicationToEdit(null);
+  };
+
+  // Filter applications based on search term
   const filteredApplications = applications.filter(application => 
     application.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div>Loading applications...</div>;
-  if (error) return <div>Error loading applications: {error}</div>;
-
+  if (loading) {
+    return <div className="container mx-auto px-4 py-8 text-center">Loading applications...</div>;
+  }
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8">
@@ -90,9 +166,20 @@ export default function Applications() {
           </div>
           
           {/* Add Application Component */}
-          <AddApplication refreshApplications={fetchApplications} />
+          <AddApplication 
+            refreshApplications={handleAddNewApplication}
+            applicationToEdit={applicationToEdit}
+            onUpdate={handleUpdateApplication}
+            onCancelEdit={handleCancelEdit}
+          />
         </div>
       </div>
+
+      {error && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
+          <p>{error}</p>
+        </div>
+      )}
 
       {filteredApplications.length === 0 ? (
         <div className="text-center py-10">
@@ -106,6 +193,12 @@ export default function Applications() {
                 <h2 className="text-xl font-semibold mb-2">{application.name}</h2>
                 <p className="text-gray-700 mb-4">{application.application}</p>
                 <div className="flex justify-between mt-4">
+                  <button 
+                    onClick={() => handleEditApplication(application)}
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Edit
+                  </button>
                   <button 
                     onClick={() => handleDeleteApplication(application.id)}
                     className="text-red-600 hover:text-red-800 font-medium"

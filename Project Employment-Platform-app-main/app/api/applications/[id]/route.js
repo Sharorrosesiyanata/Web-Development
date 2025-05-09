@@ -2,30 +2,59 @@
 import { NextResponse } from 'next/server';
 import { MongoClient, ObjectId } from 'mongodb';
 
-// Connection URI
+// Connection URI - use environment variable
 const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
 const dbName = 'employmentApp';
 const collectionName = 'applications';
 
-// Connect to MongoDB function
+// Reuse the same connection pattern
+let cachedClient = null;
+let cachedDb = null;
+
 async function connectToDatabase() {
+  if (cachedClient && cachedDb) {
+    // Return cached connection if available
+    return { client: cachedClient, db: cachedDb };
+  }
+
+  if (!uri) {
+    throw new Error('Please define the MONGODB_URI environment variable');
+  }
+
   try {
+    const client = new MongoClient(uri);
     await client.connect();
+    
+    const db = client.db(dbName);
     console.log('Connected to MongoDB successfully');
-    return client.db(dbName).collection(collectionName);
+    
+    // Cache the connection
+    cachedClient = client;
+    cachedDb = db;
+    
+    return { client, db };
   } catch (error) {
     console.error('MongoDB connection error:', error);
     throw new Error('Failed to connect to database');
   }
 }
 
-// GET handler for single application
+// GET handler for a single application
 export async function GET(request, { params }) {
   try {
     const id = params.id;
+    console.log(`Getting application with ID: ${id}`);
     
-    const collection = await connectToDatabase();
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid ID format'
+      }, { status: 400 });
+    }
+    
+    const { db } = await connectToDatabase();
+    const collection = db.collection(collectionName);
+    
     const application = await collection.findOne({ _id: new ObjectId(id) });
     
     if (!application) {
@@ -35,26 +64,36 @@ export async function GET(request, { params }) {
       }, { status: 404 });
     }
     
+    // Format the MongoDB ID to string
     return NextResponse.json({ 
       success: true, 
-      data: application 
+      data: {
+        ...application,
+        _id: application._id.toString()
+      }
     });
   } catch (error) {
     console.error('Error getting application by ID:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to retrieve application' 
+      error: 'Failed to retrieve application: ' + error.message
     }, { status: 500 });
-  } finally {
-    // Close the connection
-    await client.close();
   }
 }
 
-// PUT handler for updating
+// PUT handler for updating an application
 export async function PUT(request, { params }) {
   try {
     const id = params.id;
+    console.log(`Updating application with ID: ${id}`);
+    
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid ID format'
+      }, { status: 400 });
+    }
+    
     const updateData = await request.json();
     
     // Validate the data
@@ -65,33 +104,34 @@ export async function PUT(request, { params }) {
       }, { status: 400 });
     }
     
-    const collection = await connectToDatabase();
+    const { db } = await connectToDatabase();
+    const collection = db.collection(collectionName);
     
     // Update document
-    const result = await collection.updateOne(
+    const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: {
         name: updateData.name,
         application: updateData.application,
         updatedAt: new Date()
-      }}
+      }},
+      { returnDocument: 'after' } // Return the updated document
     );
     
-    if (result.matchedCount === 0) {
+    if (!result) {
       return NextResponse.json({
         success: false,
         error: 'Application not found'
       }, { status: 404 });
     }
     
-    console.log(`Updated application with ID: ${id}`);
-    
-    // Get the updated document
-    const updatedApplication = await collection.findOne({ _id: new ObjectId(id) });
-    
+    // Format the MongoDB ID to string in the response
     return NextResponse.json({ 
       success: true, 
-      data: updatedApplication
+      data: {
+        ...result,
+        _id: result._id.toString()
+      }
     });
   } catch (error) {
     console.error('Error updating application:', error);
@@ -99,9 +139,6 @@ export async function PUT(request, { params }) {
       success: false, 
       error: 'Failed to update application: ' + error.message 
     }, { status: 500 });
-  } finally {
-    // Close the connection
-    await client.close();
   }
 }
 
@@ -109,8 +146,19 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const id = params.id;
+    console.log(`Deleting application with ID: ${id}`);
     
-    const collection = await connectToDatabase();
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid ID format'
+      }, { status: 400 });
+    }
+    
+    const { db } = await connectToDatabase();
+    const collection = db.collection(collectionName);
+    
+    // Delete the document
     const result = await collection.deleteOne({ _id: new ObjectId(id) });
     
     if (result.deletedCount === 0) {
@@ -119,8 +167,6 @@ export async function DELETE(request, { params }) {
         error: 'Application not found'
       }, { status: 404 });
     }
-    
-    console.log(`Deleted application with ID: ${id}`);
     
     return NextResponse.json({ 
       success: true, 
@@ -132,8 +178,5 @@ export async function DELETE(request, { params }) {
       success: false, 
       error: 'Failed to delete application: ' + error.message 
     }, { status: 500 });
-  } finally {
-    // Close the connection
-    await client.close();
   }
 }

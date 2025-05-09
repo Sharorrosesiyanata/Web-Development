@@ -10,51 +10,41 @@ export default function Applications() {
   const [searchTerm, setSearchTerm] = useState('');
   const [applicationToEdit, setApplicationToEdit] = useState(null);
 
-  // Initial data - guaranteed to work
+  // Initial data - fallback only if API fails
   const initialData = [
     {
-      "id": 1,
+      "id": "1",
       "name": "Samantha Wit",
       "application": "As an educator i am very passionate when it comes to taking students to the next level. If you are interested please contact me on this number 111-456-456"
     },
     {
-      "id": 2,
+      "id": "2",
       "name": "Jack Pitt",
       "application": "I am a mechanic operator who team player with unbeated attitude and a willingness until the work is done."
     },
     {
-      "id": 3,
+      "id": "3",
       "name": "Courtney Collens",
       "application": "A personal nurse who is dedicated with expertise in patient-recovery."
     }
   ];
 
-  // Set initial data immediately and try to fetch API data
-  useEffect(() => {
-    // Always set the initial data first
-    setApplications(initialData);
-    setLoading(false);
-    
-    // Then try to fetch from API
-    fetchApiData();
-  }, []);
-
-  // Attempt to fetch data from API
+  // Fetch data from API
   const fetchApiData = async () => {
     try {
-      console.log("Attempting to fetch data from API...");
+      setLoading(true);
+      console.log("Fetching data from API...");
       const response = await fetch('/api/applications');
       
       if (!response.ok) {
-        console.warn(`API request failed with status: ${response.status}`);
-        return; // Keep using initial data
+        throw new Error(`API request failed with status: ${response.status}`);
       }
       
       const result = await response.json();
       console.log("API response:", result);
       
       if (result && result.data && Array.isArray(result.data) && result.data.length > 0) {
-        // Format the API data
+        // Format the API data consistently
         const apiData = result.data.map(item => ({
           id: item._id || item.id,
           name: item.name,
@@ -63,28 +53,28 @@ export default function Applications() {
         
         console.log("Formatted API data:", apiData);
         setApplications(apiData);
+        setError(null);
       } else {
-        console.log("API didn't return usable data, keeping initial data");
+        console.log("API didn't return usable data, using initial data");
+        setApplications(initialData);
       }
     } catch (error) {
       console.error("Error fetching from API:", error);
-      // Keep the initial data if API fails
+      setError(`Failed to load applications: ${error.message}`);
+      // Fallback to initial data
+      setApplications(initialData);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Initial fetch
+  useEffect(() => {
+    fetchApiData();
+  }, []);
+
   // Handle adding a new application
   const handleAddNewApplication = async (newApp) => {
-    const highestId = Math.max(...applications.map(app => parseInt(app.id) || 0), 0);
-    const newApplication = {
-      id: (highestId + 1).toString(),
-      name: newApp.name,
-      application: newApp.application
-    };
-    
-    // Add to local state
-    setApplications(prev => [...prev, newApplication]); 
-    
-    // Save to API
     try {
       console.log("Saving to API:", newApp);
       const response = await fetch('/api/applications', {
@@ -94,15 +84,28 @@ export default function Applications() {
       });
       
       if (!response.ok) {
-        console.error("API request failed with status:", response.status);
-        const errorData = await response.json();
-        console.error("Error details:", errorData);
-        // Optionally handle the error in the UI
+        throw new Error(`API request failed with status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log("API response after save:", result);
+      
+      if (result && result.success && result.data) {
+        // Add the new application with the MongoDB ID to local state
+        const savedApp = {
+          id: result.data._id,
+          name: result.data.name,
+          application: result.data.application
+        };
+        
+        setApplications(prev => [...prev, savedApp]);
+        console.log("Application successfully saved to MongoDB with ID:", savedApp.id);
       } else {
-        console.log("Application successfully saved to MongoDB");
+        throw new Error("API didn't return success response");
       }
     } catch (error) {
       console.error("API save error:", error);
+      setError(`Failed to save application: ${error.message}`);
     }
   };
 
@@ -112,18 +115,76 @@ export default function Applications() {
   };
 
   // Handle updating an application
-  const handleUpdateApplication = (updatedApp) => {
-    // Update in local state
-    setApplications(prev => 
-      prev.map(app => app.id === updatedApp.id ? updatedApp : app)
-    );
+  const handleUpdateApplication = async (updatedApp) => {
+    try {
+      console.log("Updating in API:", updatedApp);
+      const response = await fetch(`/api/applications/${updatedApp.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: updatedApp.name,
+          application: updatedApp.application
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API update failed: ${errorData.error || response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log("API update response:", result);
+      
+      if (result && result.success && result.data) {
+        // Update in local state with consistent ID format
+        setApplications(prev => 
+          prev.map(app => app.id === updatedApp.id ? {
+            id: result.data._id,
+            name: result.data.name,
+            application: result.data.application
+          } : app)
+        );
+        console.log("Application successfully updated in MongoDB");
+        setError(null);
+      } else {
+        throw new Error("API didn't return success response");
+      }
+    } catch (error) {
+      console.error("API update error:", error);
+      setError(`Failed to update application: ${error.message}`);
+    }
+    
     setApplicationToEdit(null);
   };
 
   // Handle deleting an application
-  const handleDeleteApplication = (id) => {
-    // Remove from local state
-    setApplications(prev => prev.filter(app => app.id !== id));
+  const handleDeleteApplication = async (id) => {
+    try {
+      console.log("Deleting from API:", id);
+      const response = await fetch(`/api/applications/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API delete failed: ${errorData.error || response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log("API delete response:", result);
+      
+      if (result && result.success) {
+        // Remove from local state after successful API deletion
+        setApplications(prev => prev.filter(app => app.id !== id));
+        console.log("Application successfully deleted from MongoDB");
+        setError(null);
+      } else {
+        throw new Error("API didn't return success response");
+      }
+    } catch (error) {
+      console.error("API delete error:", error);
+      setError(`Failed to delete application: ${error.message}`);
+    }
   };
 
   // Handle cancel edit
@@ -178,6 +239,12 @@ export default function Applications() {
       {error && (
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
           <p>{error}</p>
+          <button 
+            onClick={fetchApiData}
+            className="mt-2 text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Retry
+          </button>
         </div>
       )}
 
